@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SshConfigs">
+    <configs>
+      <sshConfig authType="PASSWORD" host="10.26.48.162" id="52ab36fe-4d0f-4a4f-b51a-b1dc1d641a6a" port="22" customName="MSFNer" nameFormat="CUSTOM" username="liupeipei" />
+    </configs>
+  </component>
+</project>

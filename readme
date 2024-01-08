@@ -1,0 +1,18 @@
+This Repository is the code execution of our research paper "Hybrid Multi-Stages Decoding for Few-Shot NER with Entity-Aware Contrastive Learning"
+
+There are three steps for the model obtaining:
+1) training the "entity-span" model by training dataset(support and eval), and then finetune the trained model on valid dataset(support), finally choose the best "entity-span" model by testing the valid(eval) dataset.
+2) training the "entity-type" model by training dataset(support and eval), and then finetune the trained model on valid dataset(support), finally choose the best "entity-type" model by testing the valid(eval) dataset.
+3) fusing the best "entity-span" and "entity-type", and finetune the best "entity-span" and "entity-type" model on test dataset(support), then test the test dataset(eval).
+
+As for the Contrastive Learning for the entity type, we perform it before testing the entity-type on dataset(support and eval).
+As for fusing KNN into the entity-logits, we build the {entity-emb: entity-label} datastore on the test support dataset (after the contrastive leanring, if the cl exists), and then incorporate the KNN logits into the model logits.
+
+Attention Notes:
+1) how to find the best entity-type model?  should we use KNN or not use KNN on choosing model step by testing the valid(eval) dataset? We should test the param "use_cbknn".
+2) when the K=1 of N-way K-shot, we should not have the KNN.
+
+We train and test the dataset by performing the following command:
+bash Exe/train.sh
+
+In the next, we will test the performance on the popular LLM and compare it with our model.

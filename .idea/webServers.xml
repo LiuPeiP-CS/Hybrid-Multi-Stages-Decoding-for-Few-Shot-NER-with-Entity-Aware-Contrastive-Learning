@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="fac4868c-8527-4ffc-acb3-b0cc8bf4d172" name="1624FewShot" url="http://10.26.48.162">
+        <fileTransfer rootFolder="/data/liupeipei/AAAI2024" accessType="SFTP" host="10.26.48.162" port="22" sshConfigId="52ab36fe-4d0f-4a4f-b51a-b1dc1d641a6a" sshConfig="MSFNer">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
