@@ -557,7 +557,7 @@ class Learner(nn.Module):
                 token_span_loss += tmp_tsloss
             if tmp_etloss is not None:
                 ent_type_loss += tmp_etloss
-            return token_span_logits, ent_type_logits, token_span_loss, ent_type_loss
+        return token_span_logits, ent_type_logits, token_span_loss, ent_type_loss
 
     def eval_typing(self, ent_type_logits, ent_type_mask):
         """
