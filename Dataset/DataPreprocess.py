@@ -159,6 +159,7 @@ if __name__ == "__main__":
     type4data = build_type4data(all_data, all_types) # 构建实体类别对应下的数据
 
     all_types = list(all_types)  # 所有的实体类
+    all_types.remove("O")
     types_num = len(all_types)
 
     for N in [4, 7]:
