@@ -67,7 +67,7 @@ def build_type4data(sentences4labels, entity_types):
     return entity_type4sentslabels
 
 
-def build_dataset(entity_type4sentslabels, entity_types, types_num, data_num, N, K):
+def build_dataset(entity_type4sentslabels, entity_types, types_num, data_num, N, K, data_mode):
     """
     :param entity_type4sentslabels: 每个实体类对应的数据
     :param entity_types: 总的实体类型
@@ -77,12 +77,8 @@ def build_dataset(entity_type4sentslabels, entity_types, types_num, data_num, N,
     :param K: K-shot
     :return:
     """
-    if K == 1:
-        K = 3
-    elif K == 5:
-        K = 8
     dataset = []
-    for _ in range(data_num):
+    for data_iter in range(data_num):
         each_task = {"support": {"word": [], "label": []}, "query": {"word": [], "label": []}, "types": []}
 
         # 构建类数据
@@ -101,7 +97,9 @@ def build_dataset(entity_type4sentslabels, entity_types, types_num, data_num, N,
                 data_in_type = entity_type4sentslabels[each_type_in_task] # 原始数据中每个类型下的数据
                 datanum_in_type = len(data_in_type) # 原始数据中每个类型数据的数量
                 count = 0
+                circulation_times = 0
                 while count < K:
+                    circulation_times += 1
                     select_data_ids = random.sample(range(datanum_in_type), K) # 从该类的原始数据中随机选择出K个
                     for select_data_id in select_data_ids:
                         each_data = data_in_type[select_data_id]
@@ -117,6 +115,10 @@ def build_dataset(entity_type4sentslabels, entity_types, types_num, data_num, N,
                             count += 1
                             if count >= K:
                                 break
+                    if circulation_times == 20: # 防止死循环的发生，因为某类里面可能确实找不到K条满足条件的数据
+                        # print("The count number is {}".format(count))
+                        break
+
             return seq_list.copy(), seqlabel_list.copy()
 
         def judge_ins(sup_list, que_list):
@@ -133,12 +135,17 @@ def build_dataset(entity_type4sentslabels, entity_types, types_num, data_num, N,
 
         while judge_ins(support_list, query_list): # 如果有交集，需要重新构建query
             query_list, query_label_list = supque_dataset()
+            # print('CC in support and query intersection!')
 
-        each_task['support']['word'] = support_list
-        each_task['support']['label'] = support_label_list
-        each_task['query']['word'] = query_list
-        each_task['query']['label'] = query_label_list
+        if len(support_list) > 0:
+            each_task['support']['word'] = support_list
+            each_task['support']['label'] = support_label_list
+        if len(query_list) > 0:
+            each_task['query']['word'] = query_list
+            each_task['query']['label'] = query_label_list
         dataset.append(each_task)
+
+        print("The {}-th task in {} is built!".format(data_iter, data_mode))
 
     return dataset.copy()
 
@@ -154,8 +161,8 @@ if __name__ == "__main__":
     all_types = list(all_types)  # 所有的实体类
     types_num = len(all_types)
 
-    for N in [5, 10]:
-        for K in [1, 5]:
+    for N in [4, 7]:
+        for K in [2, 3]:
             for data_sign in ['train', 'dev', 'test']:
                 if data_sign == 'train':
                     data_num = 4000
@@ -164,7 +171,7 @@ if __name__ == "__main__":
                 else:
                     print('Error!')
 
-                tasks = build_dataset(type4data, all_types, types_num, data_num, N, K)
+                tasks = build_dataset(type4data, all_types, types_num, data_num, N, K, data_sign)
                 print("There are {} tasks for {}-{}-{} built..., and we begin to write it into the file!".format(len(tasks), data_sign, N, K))
 
                 wrt_path = root + "NewData4FewshortNER/" + data_sign + "_" + str(N) + '_' + str(K) + '.jsonl'
