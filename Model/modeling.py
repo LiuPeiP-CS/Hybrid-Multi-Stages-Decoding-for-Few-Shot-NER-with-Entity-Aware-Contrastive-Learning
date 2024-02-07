@@ -204,7 +204,7 @@ class NBertForTokenClassification(BertForTokenClassification):
         # token_span_loss表示token预测成为entity-span的损失
         # ent_type_loss表示entity预测成为task_type的损失
 
-    def get_ent_hidden(self, hidden, ent_mask, ent_mode):
+    def get_ent_hidden(self, hidden, ent_mask, ent_mode='mean'):
         """
         :param hidden: 输出的序列特征
         :param ent_mask: 每个实体在一个序列中进行mask标注
@@ -247,12 +247,12 @@ class NBertForTokenClassification(BertForTokenClassification):
         return ce_loss.sum() / (ent_type_label.sum() + 1e-10)
 
     def get_ent_embAlabel(self, task_data):
-        input_ids = task_data["input_ids"],  # 序列转换成为bert token后的token ids,该序列由原word seq串接了task中的types
-        input_mask = task_data["input_mask"],  # 面向input_ids的mask
-        segment_ids = task_data["segment_ids"],  # 面向input_ids的0-1
-        ent_mask = task_data["ent_mask"],  # max_ent_num * max_seq_len,每个实体在一个序列中进行mask
-        ent_Ftype_ids = task_data["ent_Ftype_ids"],  # max_ent_num * (1+negative_type_num), 每个元素为[ent_type_id, negative_type1, negative_type_id2, ... negative_num])
-        ent_type_mask = task_data["ent_type_mask"],  # shape = max_ent_num * (1+negative_type_num)，其中存在实体的前ent_num * (1+negative_type_num)为1，其余部分为0
+        input_ids = task_data["input_ids"]  # 序列转换成为bert token后的token ids,该序列由原word seq串接了task中的types
+        input_mask = task_data["input_mask"]  # 面向input_ids的mask
+        segment_ids = task_data["segment_ids"]  # 面向input_ids的0-1
+        ent_mask = task_data["ent_mask"]  # max_ent_num * max_seq_len,每个实体在一个序列中进行mask
+        ent_Ftype_ids = task_data["ent_Ftype_ids"]  # max_ent_num * (1+negative_type_num), 每个元素为[ent_type_id, negative_type1, negative_type_id2, ... negative_num])
+        ent_type_mask = task_data["ent_type_mask"]  # shape = max_ent_num * (1+negative_type_num)，其中存在实体的前ent_num * (1+negative_type_num)为1，其余部分为0
 
 
         Max_seq_len = torch.nonzero((input_mask != 0).max(0)[0], as_tuple=False)[-1].item()+1 # 序列的最大长度
@@ -296,7 +296,7 @@ class NBertForTokenClassification(BertForTokenClassification):
         if sup_task_data['ent_Ftype_ids'] is not None and self.train_mode != 'span':  # ent_Ftype_ids不为None，实际上指的是在Meta-training阶段和Meta-testing的finetuning阶段
             pad_ent_emb, pad_ent_labels, pad_ent_label_mask = self.get_ent_embAlabel(sup_task_data)
             # 按照KNN的思路进行datastore的设计(在KNNutils中构建函数)
-            DataStore = build_datastore(pad_ent_emb, pad_ent_labels, pad_ent_label_mask)
+            DataStore = build_datastore(pad_ent_emb, pad_ent_labels, pad_ent_label_mask, sup_task_data['task_types_ids'][0])
         return DataStore
 
     def TestEntEmb(self, test_task_data):
@@ -309,5 +309,25 @@ class NBertForTokenClassification(BertForTokenClassification):
     def FusingKNN(self, sup_Datastore, test_task_data, model_logits, args):
         # 输入包括监督数据的datastore和测试实体的向量嵌入，以及模型获取的实体分类的logits。返回值是KNN获取的logtis和模型获取的logits的结合(在KNNutils中构建函数)
         # 模型获得的logits的shape是(batch_size, max_ents, task_type_num)，需要用mask找到真实值
-        ents_emb = self.TestEntEmb(test_task_data)
-        return ModelAKNN4prob(sup_Datastore, ents_emb, model_logits, args)
+        # logger.info("The model_logits passed to ModelAKNN4prob is {}".format(model_logits))
+        seq_num = test_task_data['input_ids'].shape[0] # 句子的数量
+        batch_size = 16
+        results4KNNAModel = []
+        BATCH_KEY = [
+            "input_ids",
+            "input_mask",
+            "segment_ids",
+            "label_ids",
+            "ent_mask",
+            "ent_Ftype_ids",
+            "ent_type_mask",
+        ]
+        for i in range((seq_num - 1) // batch_size + 1):
+            tmp_batch_data = {
+                ii: jj if ii not in BATCH_KEY else jj[i*batch_size: (i+1)*batch_size]
+                for ii, jj in test_task_data.items()
+            }
+            bents_emb = self.TestEntEmb(tmp_batch_data)
+            bmodel_logits = model_logits[i*batch_size: (i+1)*batch_size]
+            results4KNNAModel.extend(ModelAKNN4prob(sup_Datastore, bents_emb, bmodel_logits, args))
+        return results4KNNAModel
