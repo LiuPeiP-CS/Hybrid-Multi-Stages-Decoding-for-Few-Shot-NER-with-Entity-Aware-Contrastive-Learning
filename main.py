@@ -95,8 +95,8 @@ if __name__ == '__main__':
     parser.add_argument('--nouse_inner_ft', action="store_true") # 此步骤，理论上可有可无。但应该测试他的True和False，实际上是进行了eval-support的finetune
     parser.add_argument('--use_supervise', action="store_true") # 两种不同的模型训练方式。如果不选择use_supervise，那么就是原始论文中的meta训练方式。
 
-    parser.add_argument('--link_temperature', type=float, default=0.41)  # KNN参数, 0.01 0.11 0.21 0.31 0.41 0.51 0.61 0.71 0.81 0.91
-    parser.add_argument('--link_ratio', type=float, default=0.31)  # KNN参数, 0.01 0.11 0.21 0.31 0.41 0.51 0.61 0.71 0.81 0.91
+    parser.add_argument('--link_temperature', type=float, default=0.11)  # KNN参数, 0.01 0.11 0.21 0.31 0.41 0.51 0.61 0.71 0.81 0.91
+    parser.add_argument('--link_ratio', type=float, default=0.11)  # KNN参数, 0.01 0.11 0.21 0.31 0.41 0.51 0.61 0.71 0.81 0.91
     parser.add_argument('--topk', type=float, default=10)  # KNN参数
     parser.add_argument('--use_cbknn', action="store_true")  # 在训练时，选择最优模型也使用了KNN。use_cbknn && use_knn才会使用
     parser.add_argument('--use_knn', action="store_true")  # 使用KNN进行测试融合。
@@ -116,7 +116,21 @@ if __name__ == '__main__':
     torch.cuda.set_device(args.gpu_device)
 
     # **************** 针对具体数据集具体模式和选项的结果文件夹构建 ****************
-    top_dir = 'Results/{}/{}/model-{}-{}'.format(args.dataset, args.mode, args.N, args.K)  # 模型的模式
+    if args.use_knn:
+        top_dir = 'Results/{}/{}/KNN/model-{}-{}'.format(args.dataset, args.mode, args.N, args.K)  # 模型的模式
+        if args.use_cbknn:
+            top_dir = 'Results/{}/{}/CBKNN/model-{}-{}'.format(args.dataset, args.mode, args.N, args.K)  # 模型的模式
+        elif args.use_cl:
+            top_dir = 'Results/{}/{}/KNNACL/model-{}-{}'.format(args.dataset, args.mode, args.N, args.K)  # 模型的模式
+    elif args.use_cl:
+        top_dir = 'Results/{}/{}/CL/model-{}-{}'.format(args.dataset, args.mode, args.N, args.K)  # 模型的模式
+
+    # 该选项要和上述的top_dir保持一致
+    else:
+        top_dir = 'Results/{}/{}/KNN/model-{}-{}'.format(args.dataset, args.mode, args.N, args.K)  # 模型的模式
+
+
+
     # args.name = "{}-k_{}_{}_{}_{}_max_loss-{}_{}_{}".format(
     #     args.similar_k, args.eval_every_meta_steps, args.inner_steps, args.inner_size, args.max_ft_steps, args.lambda_max_loss, args.inner_lambda_max_loss, args.tagging_scheme)
 
