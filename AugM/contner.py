@@ -61,12 +61,12 @@ def euclidean_distance(a, b, normalize=False):
     return logits # shape = [len*len, ]
 
 
-def remove_irrelevant_tokens_for_loss(self, attention_mask, original_embedding_mu, original_embedding_sigma, labels):
+def remove_irrelevant_tokens_for_loss(embedding_dimension, attention_mask, original_embedding_mu, original_embedding_sigma, labels):
     active_indices = attention_mask.view(-1) == 1 # 包含了[CLS],[SEP]
     active_indices = torch.where(active_indices == True)[0] # 真实token的位置[0,1,2,3,4,5,6...]
 
-    output_embedding_mu = original_embedding_mu.view(-1, self.embedding_dimension)[active_indices] # (batch中所有有效字符的数量, out_dim)
-    output_embedding_sigma = original_embedding_sigma.view(-1, self.embedding_dimension)[active_indices]
+    output_embedding_mu = original_embedding_mu.view(-1, embedding_dimension)[active_indices] # (batch中所有有效字符的数量, out_dim)
+    output_embedding_sigma = original_embedding_sigma.view(-1, embedding_dimension)[active_indices]
     labels_straightened = labels.view(-1)[active_indices] # 和output_embedding_mu的0维一样大
 
     # remove indices with negative labels only
@@ -79,7 +79,7 @@ def remove_irrelevant_tokens_for_loss(self, attention_mask, original_embedding_m
     return output_embedding_mu, output_embedding_sigma, labels_straightened # 纯粹的字符向量以及对应的标签，成为(X1+X2+X3+...Xn, emb_dim)形式
 
 
-def calculate_KL_or_euclidean(self, attention_mask, original_embedding_mu, original_embedding_sigma, labels,
+def calculate_KL_or_euclidean(embedding_dimension, attention_mask, original_embedding_mu, original_embedding_sigma, labels,
                               consider_mutual_O=False, loss_type=None):
 
     # we will create embedding pairs in following manner
@@ -88,7 +88,7 @@ def calculate_KL_or_euclidean(self, attention_mask, original_embedding_mu, origi
     #                   | repeat     |||                   | repeat
     # extract only active parts that does not contain any paddings
 
-    output_embedding_mu, output_embedding_sigma, labels_straightened = remove_irrelevant_tokens_for_loss(self, attention_mask,original_embedding_mu, original_embedding_sigma, labels)
+    output_embedding_mu, output_embedding_sigma, labels_straightened = remove_irrelevant_tokens_for_loss(embedding_dimension, attention_mask, original_embedding_mu, original_embedding_sigma, labels)
 
     # remove indices with zero labels, that is "O" classes, 即0是非实体的标签
     if not consider_mutual_O:
@@ -127,7 +127,7 @@ def calculate_KL_or_euclidean(self, attention_mask, original_embedding_mu, origi
     elif loss_type == "KL":  # KL_divergence
         loss = -loss_kl(filtered_embedding_mu, filtered_embedding_sigma,
                             repeated_output_embeddings_mu, repeated_output_embeddings_sigma,
-                            embed_dimension=self.embedding_dimension)
+                            embed_dimension=embedding_dimension)
 
     else:
         raise Exception("unknown loss")
@@ -148,6 +148,8 @@ class ContrastiveLearning(nn.Module): # modified the original huggingface BertFo
         # super().__init__(config)
         # self.num_labels = config.num_labels
         # self.embedding_dimension = config.task_specific_params['embedding_dimension']
+
+        self.embedding_dimension = embedding_dimension
 
         # self.bert = BertModel(config)
         self.dropout = nn.Dropout(hidden_dropout_prob)
@@ -177,7 +179,7 @@ class ContrastiveLearning(nn.Module): # modified the original huggingface BertFo
         original_embedding_sigma = (F.elu(self.output_embedder_sigma((sequence_output)))) + 1 + 1e-14 # # shape=[batch_size, seq_len, 32]，另一种线性变换
 
 
-        loss = calculate_KL_or_euclidean(self, ent_mask, original_embedding_mu,
+        loss = calculate_KL_or_euclidean(self.embedding_dimension, ent_mask, original_embedding_mu,
                                                  original_embedding_sigma, ent_type_ids, consider_mutual_O,
                                                  loss_type=loss_type)
         return loss
