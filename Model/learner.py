@@ -901,7 +901,7 @@ class Learner(nn.Module):
             elif type_loss is not None:
                 # loss = loss + type_loss
                 loss = 0.7* loss + 0.3 * type_loss # 另一处在490行
-            grad = torch.autograd.grad(loss, params) # meta-update的核心所在
+            grad = torch.autograd.grad(loss, params, allow_unused=True) # meta-update的核心所在
             meta_grad.append(grad)
 
             self.load_weights(names, weights)
