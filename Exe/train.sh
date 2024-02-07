@@ -1,12 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-# For training the model
+# For training the model, 550 667 985
 
 
-SEEDS=(171 354 550 667 985)
+SEEDS=(171 354)
 N=10
-K=1
-mode=intra
+K=5
+mode=inter
 dataset=FewNERD
 
 for seed in ${SEEDS[@]}
@@ -48,9 +48,10 @@ for seed in ${SEEDS[@]}
         --inner_size=32 \
         --max_ft_steps=3 \
         --concat_types=None \
-        --lambda_max_loss=2.0
+        --lambda_max_loss=2.0 \
+        --use_knn
 
-    cp Results/${dataset}/${mode}/model-${N}-${K}/Bert/bert-base-uncased-innerSteps_2-innerSize_32-lrInner_0.0001-lrMeta_0.0001-maxSteps_5001-seed_${seed}/name_10-k_100_type_2_32_3_10_10_BIEOS/en_type_pytorch_model.bin Results/${dataset}/${mode}/model-${N}-${K}/Bert/bert-base-uncased-innerSteps_2-innerSize_32-lrInner_3e-05-lrMeta_3e-05-maxSteps_5001-seed_${seed}/name_10-k_100_2_32_3_max_loss_2_5_BIEOS
+    cp Results/${dataset}/${mode}/KNN/model-${N}-${K}/Bert/bert-base-uncased-innerSteps_2-innerSize_32-lrInner_0.0001-lrMeta_0.0001-maxSteps_5001-seed_${seed}/name_10-k_100_type_2_32_3_10_10_BIEOS/en_type_pytorch_model.bin Results/${dataset}/${mode}/KNN/model-${N}-${K}/Bert/bert-base-uncased-innerSteps_2-innerSize_32-lrInner_3e-05-lrMeta_3e-05-maxSteps_5001-seed_${seed}/name_10-k_100_2_32_3_max_loss_2_5_BIEOS
 
     python3 main.py \
         --gpu_device=0 \
@@ -71,5 +72,6 @@ for seed in ${SEEDS[@]}
         --inner_lambda_max_loss=5.0 \
         --inner_similar_k=10 \
         --viterbi=hard \
-        --tagging_scheme=BIEOS
+        --tagging_scheme=BIEOS \
+        --use_knn
 done
