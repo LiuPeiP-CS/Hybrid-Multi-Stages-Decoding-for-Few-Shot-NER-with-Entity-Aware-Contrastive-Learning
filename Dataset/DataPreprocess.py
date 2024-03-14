@@ -56,6 +56,33 @@ def load_file(orig_data_path, ent_types_path):
     return sentences4labels, entity_types
 
 
+def type_count(all_data, all_types):
+    type_cnum = dict()
+    for t in all_types:
+        if t != 'O':
+            type_cnum[t] = 0 # 初始化实体类型及相应的数据数量
+
+    def delrep(each_datalabel):
+        # 对连续重复的字符串去重
+        new_label_seq = []
+        current_label = ''
+        label_iter = 0
+        while label_iter < len(each_datalabel):
+            if each_datalabel[label_iter] != current_label:
+                new_label_seq.append(each_datalabel[label_iter])
+                current_label = each_datalabel[label_iter]
+            label_iter += 1
+        return new_label_seq
+
+    for (_, each_datalabel) in all_data:
+        nlabel_seq = delrep(each_datalabel)
+        for eachent in nlabel_seq:
+            if eachent in type_cnum:
+                type_cnum[eachent] += 1
+
+    print(type_cnum)
+
+
 def build_type4data(sentences4labels, entity_types):
     entity_type4sentslabels = dict() # 构建每个实体类别下面的所有序列
     for each_entity_type in entity_types:
@@ -115,7 +142,7 @@ def build_dataset(entity_type4sentslabels, entity_types, types_num, data_num, N,
                             count += 1
                             if count >= K:
                                 break
-                    if circulation_times == 20: # 防止死循环的发生，因为某类里面可能确实找不到K条满足条件的数据
+                    if circulation_times == 10: # 防止死循环的发生，因为某类里面可能确实找不到K条满足条件的数据
                         # print("The count number is {}".format(count))
                         break
 
@@ -137,13 +164,12 @@ def build_dataset(entity_type4sentslabels, entity_types, types_num, data_num, N,
             query_list, query_label_list = supque_dataset()
             # print('CC in support and query intersection!')
 
-        if len(support_list) > 0:
+        if len(support_list) > 0 and len(query_list) > 0:
             each_task['support']['word'] = support_list
             each_task['support']['label'] = support_label_list
-        if len(query_list) > 0:
             each_task['query']['word'] = query_list
             each_task['query']['label'] = query_label_list
-        dataset.append(each_task)
+            dataset.append(each_task)
 
         print("The {}-th task in {} is built!".format(data_iter, data_mode))
 
@@ -156,23 +182,31 @@ if __name__ == "__main__":
     new_ent_types_path = root + "NewData4FewshortNER/APTNER_entity_types.json"
 
     all_data, all_types = load_file(orig_alldata_path, new_ent_types_path) # 获取原始数据
+
+    # type_count(all_data, all_types)
+    # exit()
+
     type4data = build_type4data(all_data, all_types) # 构建实体类别对应下的数据
 
     all_types = list(all_types)  # 所有的实体类
     all_types.remove("O")
-    types_num = len(all_types)
 
-    for N in [4, 7]:
-        for K in [2, 3]:
+    for N in [4, 6]:
+        for K in [1, 3]:
             for data_sign in ['train', 'dev', 'test']:
                 if data_sign == 'train':
                     data_num = 4000
-                elif data_sign == 'dev' or data_sign == 'test':
+                    ents_types = ['VULID', 'FILE', 'SECTEAM', 'LOC', 'TOOL', 'APT', 'ACT']
+                elif data_sign == 'dev':
                     data_num = 800
+                    ents_types = ['SHA1', 'OS', 'URL', 'MAL', 'DOM', 'PROT', 'TIME']
+                elif data_sign == 'test':
+                    data_num = 800
+                    ents_types = ['ENCR', 'VULNAME', 'IP', 'MD5', 'SHA2', 'IDTY', 'EMAIL']
                 else:
                     print('Error!')
 
-                tasks = build_dataset(type4data, all_types, types_num, data_num, N, K, data_sign)
+                tasks = build_dataset(type4data, ents_types, 7, data_num, N, K, data_sign)
                 print("There are {} tasks for {}-{}-{} built..., and we begin to write it into the file!".format(len(tasks), data_sign, N, K))
 
                 wrt_path = root + "NewData4FewshortNER/" + data_sign + "_" + str(N) + '_' + str(K) + '.jsonl'
