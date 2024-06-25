@@ -1,0 +1,26 @@
+{
+    "entity_types": [
+        "VULNAME",
+        "PROT",
+        "DOM",
+        "EMAIL",
+        "URL",
+        "IDTY",
+        "SHA1",
+        "TIME",
+        "VULID",
+        "ENCR",
+        "MD5",
+        "SECTEAM",
+        "APT",
+        "FILE",
+        "LOC",
+        "ACT",
+        "MAL",
+        "OS",
+        "O",
+        "SHA2",
+        "IP",
+        "TOOL"
+    ]
+}
