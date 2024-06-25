@@ -177,9 +177,9 @@ def build_dataset(entity_type4sentslabels, entity_types, types_num, data_num, N,
 
 
 if __name__ == "__main__":
-    root = 'D:/IIE_CAS/毕业相关/毕业/毕业论文数据/关于小样本NER的处理/APTNER/'
-    orig_alldata_path = root + '所有原始数据的集合/APTNER.txt'
-    new_ent_types_path = root + "NewData4FewshortNER/APTNER_entity_types.json"
+    root = 'D:/FEWAPTER4ESD/V1/'
+    orig_alldata_path = root + 'APTNER.txt'
+    new_ent_types_path = root + "APTNER_entity_types.json"
 
     all_data, all_types = load_file(orig_alldata_path, new_ent_types_path) # 获取原始数据
 
@@ -195,13 +195,13 @@ if __name__ == "__main__":
         for K in [1, 3]:
             for data_sign in ['train', 'dev', 'test']:
                 if data_sign == 'train':
-                    data_num = 4000
+                    data_num = 6000
                     ents_types = ['VULID', 'FILE', 'SECTEAM', 'LOC', 'TOOL', 'APT', 'ACT']
                 elif data_sign == 'dev':
-                    data_num = 800
+                    data_num = 3000
                     ents_types = ['SHA1', 'OS', 'URL', 'MAL', 'DOM', 'PROT', 'TIME']
                 elif data_sign == 'test':
-                    data_num = 800
+                    data_num = 3000
                     ents_types = ['ENCR', 'VULNAME', 'IP', 'MD5', 'SHA2', 'IDTY', 'EMAIL']
                 else:
                     print('Error!')
@@ -209,7 +209,7 @@ if __name__ == "__main__":
                 tasks = build_dataset(type4data, ents_types, 7, data_num, N, K, data_sign)
                 print("There are {} tasks for {}-{}-{} built..., and we begin to write it into the file!".format(len(tasks), data_sign, N, K))
 
-                wrt_path = root + "NewData4FewshortNER/" + data_sign + "_" + str(N) + '_' + str(K) + '.jsonl'
+                wrt_path = root + data_sign + "_" + str(N) + '_' + str(K) + '.jsonl'
                 with open(wrt_path, 'a+', encoding='utf-8') as wrt_file: # 文件对象
                     for task in tasks: # 每个任务
                         str_task = json.dumps(task) # 将每个任务转化成为字符串的形式
