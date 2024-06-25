@@ -1,0 +1,11 @@
+IDTY： 政府/组织
+MAL 恶意软件
+ACT 攻击行为
+TOOL 软件，工具
+VULNAME 病毒木马？
+PROT 协议
+OS 系统
+URL 网址
+FILE 文件
+SECTEAM 防火墙、杀毒软件
+MD5
